@@ -48,9 +48,18 @@ def create_background_scheduler() -> BackgroundScheduler:
     return scheduler
 
 
-def run_blocking_scheduler() -> None:
+def run_blocking_scheduler(run_immediately: bool = True) -> None:
     scheduler = BlockingScheduler(timezone="UTC")
     _register_jobs(scheduler)
+
+    if run_immediately:
+        logger.info("Running all jobs immediately at startup...")
+        for job in scheduler.get_jobs():
+            logger.info("  -> %s", job.name)
+            try:
+                job.func()
+            except Exception as exc:
+                logger.error("Startup run failed for %s: %s", job.name, exc)
 
     logger.info("Starting Messari scheduler — %d jobs registered:", len(scheduler.get_jobs()))
     for job in scheduler.get_jobs():

@@ -1,6 +1,12 @@
 #!/usr/bin/env python
-"""Start the blocking Messari scheduler."""
+"""Start the blocking Messari scheduler.
 
+Usage:
+    python scripts/run_scheduler.py           # run all jobs immediately then schedule
+    python scripts/run_scheduler.py --no-init # skip immediate first run
+"""
+
+import argparse
 import sys
 import os
 
@@ -15,6 +21,14 @@ logger = get_logger("run_scheduler")
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Messari Scheduler")
+    parser.add_argument(
+        "--no-init",
+        action="store_true",
+        help="Skip running all jobs immediately at startup",
+    )
+    args = parser.parse_args()
+
     logger.info("=== Messari Scheduler ===")
     logger.info("Tracked assets: %s", ", ".join(settings.tracked_assets_list))
 
@@ -26,7 +40,7 @@ def main():
         logger.warning("SCHEDULER_ENABLED=false — nothing to do")
         sys.exit(0)
 
-    run_blocking_scheduler()
+    run_blocking_scheduler(run_immediately=not args.no_init)
 
 
 if __name__ == "__main__":
