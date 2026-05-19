@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Run all Messari jobs once (useful for testing / initial data load)."""
+"""Run all jobs once (useful for testing / initial data load)."""
 
 import sys
 import os
@@ -9,9 +9,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.database import check_connection
 from app.scheduler.jobs import (
     job_sync_assets,
-    job_fetch_global_metrics,
-    job_fetch_asset_metrics,
-    job_fetch_price_history,
+    job_fetch_coingecko_global,
+    job_fetch_coingecko_metrics,
+    job_fetch_coingecko_price_history,
     job_fetch_asset_profiles,
 )
 from app.utils.logger import get_logger
@@ -26,11 +26,11 @@ def main():
 
     logger.info("Running all jobs once...")
 
-    job_fetch_global_metrics()
+    job_fetch_coingecko_global()
     job_sync_assets()
-    job_fetch_asset_metrics()
-    job_fetch_price_history()
-    job_fetch_asset_profiles()
+    job_fetch_coingecko_metrics()
+    job_fetch_coingecko_price_history()
+    job_fetch_asset_profiles()  # will skip (Enterprise required)
 
     logger.info("All jobs complete")
 

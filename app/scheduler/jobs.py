@@ -12,7 +12,7 @@ from app.repositories import (
     global_metrics_repo,
     scheduler_log_repo,
 )
-from app.services import messari_service
+from app.services import messari_service, coingecko_service
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -120,3 +120,49 @@ def job_fetch_global_metrics() -> None:
                 return global_metrics_repo.insert_global_metrics(session, row)
         return 0
     _run_job("fetch_global_metrics", _inner)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CoinGecko jobs — free-tier replacements for Messari Enterprise-gated endpoints
+# Writes into the same messari_* tables.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def job_fetch_coingecko_metrics() -> None:
+    """Bulk market data + per-asset developer enrichment → messari_asset_metrics."""
+    def _inner():
+        ids = settings.tracked_assets_list
+        market_rows = coingecko_service.fetch_markets(ids)
+        # Enrich with developer data (one call per asset, slow but free)
+        merged = []
+        for m in market_rows:
+            dev = coingecko_service.fetch_developer_data(m["slug"])
+            merged.append(coingecko_service.merge_metrics(m, dev))
+        if merged:
+            with get_db() as session:
+                return asset_metrics_repo.insert_asset_metrics(session, merged)
+        return 0
+    _run_job("fetch_coingecko_metrics", _inner)
+
+
+def job_fetch_coingecko_global() -> None:
+    """Global crypto market snapshot → messari_global_metrics."""
+    def _inner():
+        row = coingecko_service.fetch_global()
+        if row:
+            with get_db() as session:
+                return global_metrics_repo.insert_global_metrics(session, row)
+        return 0
+    _run_job("fetch_coingecko_global", _inner)
+
+
+def job_fetch_coingecko_price_history() -> None:
+    """Daily OHLC per tracked asset → messari_price_history."""
+    def _inner():
+        total = 0
+        for slug in settings.tracked_assets_list:
+            rows = coingecko_service.fetch_ohlc(slug, days=settings.price_history_lookback_days)
+            if rows:
+                with get_db() as session:
+                    total += price_history_repo.upsert_price_history(session, rows)
+        return total
+    _run_job("fetch_coingecko_price_history", _inner)

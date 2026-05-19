@@ -29,10 +29,18 @@ class Settings(BaseSettings):
     messari_api_key: str = "QHO0BmsTehozNB+z4kPKEks+tnl1aWtP0hepFSo0ADSdfJm+"
     messari_base_url: str = "https://api.messari.io"
 
+    # ── CoinGecko API (free tier — no key required) ────────────────────────────
+    # Populates messari_asset_metrics + messari_global_metrics with free data
+    # since Messari per-asset metrics are Enterprise-only.
+    coingecko_api_key: str = ""
+    coingecko_base_url: str = "https://api.coingecko.com/api/v3"
+
     # ── Assets ─────────────────────────────────────────────────────────────────
+    # Slugs work for both CoinGecko and Messari for most major assets.
+    # Note: "polygon-ecosystem-token" is CoinGecko's current ID for POL (ex-MATIC).
     tracked_assets: str = (
         "bitcoin,ethereum,solana,cardano,polkadot,"
-        "avalanche-2,chainlink,uniswap,polygon,cosmos"
+        "avalanche-2,chainlink,uniswap,polygon-ecosystem-token,cosmos"
     )
 
     # ── Scheduler intervals (seconds) ─────────────────────────────────────────
